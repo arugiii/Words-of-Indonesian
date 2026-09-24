@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kata Kilau</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg1:#123c44;--bg2:#0a1f2b;--tile:#f4b942;--tile-ink:#3b2500;--empty:rgba(255,255,255,.12);--wheel:#f7efe0;--wheel-ink:#1c3a40;--accent:#ff7a59;--ink:#f7efe0;--good:#5fd6a0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#0f333b;--bg2:#07151e}}
+:root[data-theme="dark"]{--bg1:#0f333b;--bg2:#07151e}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;height:100%;background:radial-gradient(120% 90% at 50% 0%,var(--bg1),var(--bg2));color:var(--ink);font-family:'Baloo 2','Trebuchet MS',sans-serif;overflow:hidden;user-select:none;touch-action:none}
+#app{max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;align-items:center;padding:10px 14px 16px}
+header{width:100%;display:flex;align-items:center;justify-content:space-between;font-weight:800}
+.pill{background:rgba(255,255,255,.1);border-radius:999px;padding:2px 14px;font-size:18px}
+h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.5px}
+#gridWrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0}
+#grid{display:grid;gap:4px}
+.cell{width:var(--c);height:var(--c);border-radius:8px;background:transparent}
+.cell.on{background:var(--empty);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:calc(var(--c)*.6);color:transparent;transition:background .25s,color .25s,transform .25s}
+.cell.open{background:var(--tile);color:var(--tile-ink);box-shadow:0 3px 0 #b8841c;transform:scale(1)}
+.cell.pop{animation:pop .4s}
+@keyframes pop{50%{transform:scale(1.25)}}
+#preview{height:44px;display:flex;gap:4px;align-items:center;justify-content:center;margin:6px 0}
+#preview span{background:var(--wheel);color:var(--wheel-ink);border-radius:10px;min-width:32px;height:38px;padding:0 8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px}
+#preview.bad{animation:shake .35s}
+#preview.good span{background:var(--good)}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#msg{height:22px;font-size:15px;opacity:.85;margin-bottom:4px}
+#wheelBox{position:relative;width:270px;height:270px;flex:none}
+#wheel{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff8ea,var(--wheel));box-shadow:0 8px 0 rgba(0,0,0,.25),0 14px 30px rgba(0,0,0,.35)}
+#lines{position:absolute;inset:0;pointer-events:none}
+.let{position:absolute;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:var(--wheel-ink);transition:background .15s,color .15s,transform .15s}
+.let.sel{background:var(--accent);color:#fff;transform:scale(1.12)}
+.tools{width:100%;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+button{font:inherit;font-weight:700;color:var(--ink);background:rgba(255,255,255,.12);border:0;border-radius:14px;padding:6px 16px;font-size:17px;cursor:pointer}
+button:focus-visible{outline:3px solid var(--tile);outline-offset:2px}
+button:active{transform:translateY(2px)}
+#shuf{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:var(--wheel-ink);color:var(--wheel);font-size:26px;padding:0;z-index:2}
+#shuf:active{transform:translate(-50%,-48%)}
+#over{position:fixed;inset:0;background:rgba(5,15,22,.82);display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;padding:24px;z-index:5}
+#over.show{display:flex}
+#over h2{font-size:38px;margin:0;color:var(--tile)}
+#over p{margin:0 0 8px;font-size:18px;max-width:320px}
+#over button{background:var(--tile);color:var(--tile-ink);font-size:20px;padding:8px 28px;box-shadow:0 4px 0 #b8841c}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-height:640px){#wheelBox{width:220px;height:220px}.let{width:44px;height:44px;margin:-22px 0 0 -22px;font-size:26px}#shuf{width:46px;height:46px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="pill" id="lvl">Level 1</div>
+    <h1>Kata Kilau</h1>
+    <div class="pill" id="coins">🪙 0</div>
+  </header>
+  <div id="gridWrap"><div id="grid"></div></div>
+  <div id="msg"></div>
+  <div id="preview"></div>
+  <div id="wheelBox">
+    <div id="wheel"></div>
+    <svg id="lines" viewBox="0 0 270 270"><polyline id="poly" fill="none" stroke="#ff7a59" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/></svg>
+    <button id="shuf" aria-label="Acak huruf">⟳</button>
+  </div>
+  <div class="tools">
+    <button id="hint">💡 Petunjuk (15)</button>
+    <button id="bonus">⭐ Bonus: 0</button>
+  </div>
+</div>
+<div id="over"><h2>Mantap!</h2><p id="overTxt"></p><button id="next">Lanjut</button></div>
+
+<script>
+const LEVELS=[
+ {l:"BAKU",w:["BUKA","BAKU","ABU","BAK","KAU"],b:[]},
+ {l:"KASIH",w:["KISAH","KASIH","AKSI","ASIK","HAK","SAH"],b:["ASIH"]},
+ {l:"RUMAH",w:["RUMAH","HARUM","MURAH","MAU","RUM"],b:[]},
+ {l:"TANGIS",w:["TANGIS","GANTI","SIANG","TIANG","TANI"],b:["ANTI","TAS"]},
+ {l:"BELAJAR",w:["BELAJAR","LEBAR","BAJA","BELA","JERA"],b:["LABA","BAR","ERA"]}
+];
+const $=id=>document.getElementById(id);
+let lv=0,coins=0,cur,placed,found,bonusFound,letters,sel=[],drag=false;
+try{lv=Math.min(+localStorage.getItem('kk_lv')||0,LEVELS.length-1);coins=+localStorage.getItem('kk_coins')||0}catch(e){}
+function save(){try{localStorage.setItem('kk_lv',lv);localStorage.setItem('kk_coins',coins)}catch(e){}}
+
+function layout(words){
+  const g={},out=[];
+  const sorted=[...words].sort((a,b)=>b.length-a.length);
+  const put=(w,x,y,d)=>{for(let i=0;i<w.length;i++)g[(x+d[0]*i)+','+(y+d[1]*i)]=w[i];out.push({w,x,y,d})};
+  put(sorted[0],0,0,[1,0]);
+  const at=(x,y)=>g[x+','+y];
+  for(const w of sorted.slice(1)){
+    let ok=false;
+    for(const p of [...out]){
+      if(ok)break;
+      const nd=p.d[0]?[0,1]:[1,0];
+      for(let i=0;i<p.w.length&&!ok;i++)for(let j=0;j<w.length&&!ok;j++){
+        if(p.w[i]!==w[j])continue;
+        const cx=p.x+p.d[0]*i,cy=p.y+p.d[1]*i,sx=cx-nd[0]*j,sy=cy-nd[1]*j;
+        let good=true;
+        if(at(sx-nd[0],sy-nd[1])||at(sx+nd[0]*w.length,sy+nd[1]*w.length))good=false;
+        for(let k=0;k<w.length&&good;k++){
+          const x=sx+nd[0]*k,y=sy+nd[1]*k,e=at(x,y);
+          if(e){if(e!==w[k])good=false;continue}
+          if(at(x+nd[1],y+nd[0])||at(x-nd[1],y-nd[0]))good=false;
+        }
+        if(good){put(w,sx,sy,nd);ok=true}
+      }
+    }
+  }
+  return {g,out};
+}
+
+function load(){
+  cur=LEVELS[lv];
+  const r=layout(cur.w);placed=r.out;
+  const placedSet=new Set(placed.map(p=>p.w));
+  cur.extra=[...cur.b,...cur.w.filter(w=>!placedSet.has(w))];
+  found=new Set();bonusFound=new Set();
+  const xs=Object.keys(r.g).map(k=>k.split(',').map(Number));
+  const minX=Math.min(...xs.map(a=>a[0])),maxX=Math.max(...xs.map(a=>a[0]));
+  const minY=Math.min(...xs.map(a=>a[1])),maxY=Math.max(...xs.map(a=>a[1]));
+  const cols=maxX-minX+1,rows=maxY-minY+1;
+  const gw=$('gridWrap');
+  const size=Math.max(24,Math.min(48,Math.floor((Math.min(gw.clientWidth,440)-4*cols)/cols),Math.floor((gw.clientHeight-4*rows)/rows)));
+  const grid=$('grid');
+  grid.style.setProperty('--c',size+'px');
+  grid.style.gridTemplateColumns=`repeat(${cols},${size}px)`;
+  grid.innerHTML='';
+  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
+    const d=document.createElement('div');d.className='cell';d.id=`c${x-minX}_${y-minY}`;
+    if(r.g[x+','+y]){d.classList.add('on');d.textContent=r.g[x+','+y]}
+    grid.appendChild(d);
+  }
+  placed.forEach(p=>{p.cells=[...p.w].map((_,i)=>`c${p.x+p.d[0]*i-minX}_${p.y+p.d[1]*i-minY}`)});
+  letters=[...cur.l].sort(()=>Math.random()-.5);
+  drawWheel();ui();$('over').classList.remove('show');say('Sambungkan huruf untuk membentuk kata');
+}
+function ui(){
+  $('lvl').textContent='Level '+(lv+1);$('coins').textContent='🪙 '+coins;
+  $('bonus').textContent='⭐ Bonus: '+bonusFound.size;
+  $('hint').textContent='💡 Petunjuk (15)';
+}
+function say(t){$('msg').textContent=t}
+
+const R=105,C=135;
+function drawWheel(){
+  document.querySelectorAll('.let').forEach(e=>e.remove());
+  const box=$('wheelBox'),s=box.clientWidth/270;
+  letters.forEach((ch,i)=>{
+    const a=-Math.PI/2+i*2*Math.PI/letters.length;
+    const d=document.createElement('div');d.className='let';d.textContent=ch;d.dataset.i=i;
+    d.dataset.x=C+R*Math.cos(a);d.dataset.y=C+R*Math.sin(a);
+    d.style.left=(d.dataset.x*s)+'px';d.style.top=(d.dataset.y*s)+'px';
+    box.appendChild(d);
+  });
+  clearSel();
+}
+function pts(){return sel.map(i=>{const e=document.querySelector(`.let[data-i="${i}"]`);return e.dataset.x+','+e.dataset.y}).join(' ')}
+function renderSel(){
+  document.querySelectorAll('.let').forEach(e=>e.classList.toggle('sel',sel.includes(+e.dataset.i)));
+  $('poly').setAttribute('points',pts());
+  $('preview').className='';
+  $('preview').innerHTML=sel.map(i=>`<span>${letters[i]}</span>`).join('');
+}
+function clearSel(){sel=[];renderSel()}
+
+const wheel=$('wheelBox');
+function letterAt(e){
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  return el&&el.classList.contains('let')?+el.dataset.i:null;
+}
+wheel.addEventListener('pointerdown',e=>{
+  if(e.target.closest('#shuf'))return;
+  const i=letterAt(e);if(i===null)return;
+  drag=true;sel=[i];renderSel();wheel.setPointerCapture(e.pointerId);
+});
+wheel.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const i=letterAt(e);if(i===null)return;
+  if(!sel.includes(i)){sel.push(i);renderSel()}
+  else if(sel.length>1&&sel[sel.length-2]===i){sel.pop();renderSel()}
+});
+const end=()=>{if(!drag)return;drag=false;submit()};
+wheel.addEventListener('pointerup',end);
+wheel.addEventListener('pointercancel',end);
+
+function flash(cls){const p=$('preview');p.className=cls;setTimeout(clearSel,cls==='bad'?380:500)}
+function submit(){
+  const w=sel.map(i=>letters[i]).join('');
+  if(w.length<2){clearSel();return}
+  const pl=placed.find(p=>p.w===w);
+  if(pl){
+    if(found.has(w)){say('Kata "'+w+'" sudah ketemu');flash('bad');return}
+    found.add(w);reveal(pl);coins+=5;flash('good');say('Kata ditemukan! +5 🪙');
+    ui();save();
+    if(found.size===placed.length)setTimeout(win,700);
+  }else if(cur.extra.includes(w)||(cur.w.includes(w))){
+    if(bonusFound.has(w)){say('Bonus "'+w+'" sudah dapat');flash('bad');return}
+    bonusFound.add(w);coins+=10;flash('good');say('Kata bonus! +10 🪙');ui();save();
+  }else{say('"'+w+'" tidak ada di daftar level ini');flash('bad')}
+}
+function reveal(p){
+  p.cells.forEach((id,i)=>setTimeout(()=>{const c=$(id);c.classList.add('open','pop')},i*70));
+}
+function win(){
+  coins+=20;save();ui();
+  $('overTxt').textContent=lv<LEVELS.length-1?'Level '+(lv+1)+' selesai. Bonus +20 🪙':'Semua level sudah kamu selesaikan. Main dari awal lagi?';
+  $('next').textContent=lv<LEVELS.length-1?'Lanjut':'Main lagi';
+  $('over').classList.add('show');
+}
+$('next').onclick=()=>{lv=lv<LEVELS.length-1?lv+1:0;save();load()};
+$('shuf').onclick=()=>{letters.sort(()=>Math.random()-.5);drawWheel()};
+$('hint').onclick=()=>{
+  if(coins<15){say('Koin kurang. Butuh 15 🪙');return}
+  const hid=[];
+  placed.forEach(p=>{if(!found.has(p.w))p.cells.forEach((id,i)=>{if(!$(id).classList.contains('open'))hid.push({id,p,i})})});
+  if(!hid.length)return;
+  const h=hid[Math.floor(Math.random()*hid.length)];
+  $(h.id).classList.add('open','pop');coins-=15;
+  if(h.p.cells.every(id=>$(id).classList.contains('open'))&&!found.has(h.p.w)){found.add(h.p.w);coins+=0;if(found.size===placed.length)setTimeout(win,700)}
+  ui();save();say('Satu huruf dibuka');
+};
+$('bonus').onclick=()=>say(bonusFound.size?'Bonus: '+[...bonusFound].join(', '):'Cari kata lain yang valid dari huruf ini untuk dapat bonus');
+window.addEventListener('resize',()=>{if(cur)drawWheel()});
+document.fonts&&document.fonts.ready.then(()=>{});
+load();
+</script>
+</body>
+</html>
